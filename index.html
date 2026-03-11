@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e0b09">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cave à Vin">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Ma Cave à Vin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0b09;--surface:#1a1410;--surface2:#241c16;
+  --border:#3a2d22;--gold:#c9a96e;--gold-light:#e8c98a;
+  --cream:#f5ede0;--muted:#7a6a58;--text:#e8ddd0;
+  --red:#a03040;--green:#4a7c59;--green-light:#6aab7e;
+}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-weight:300;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(139,38,53,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(201,169,110,.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 24px 80px}
+#loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loading h2{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--cream)}
+#loading p{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.spinner{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-dot{position:fixed;top:16px;right:16px;width:8px;height:8px;border-radius:50%;background:var(--green);z-index:50;transition:background .3s}
+.sync-dot.syncing{background:var(--gold);animation:pulse .8s infinite}
+.sync-dot.error{background:#d4788a}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+header{padding:40px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.header-left h1{font-family:'Cormorant Garamond',serif;font-size:clamp(1.9rem,4.5vw,3rem);font-weight:300;letter-spacing:.02em;color:var(--cream);line-height:1}
+.header-left h1 span{color:var(--gold);font-style:italic}
+.header-left p{margin-top:7px;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.header-stats{display:flex;gap:24px;flex-wrap:wrap}
+.stat{text-align:right}
+.stat-value{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;color:var(--gold);line-height:1}
+.stat-label{font-size:.63rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:28px}
+.nav-tab{padding:11px 24px;font-size:.73rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'Jost',sans-serif;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.page{display:none}.page.active{display:block}
+.dash-period{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.period-btn{padding:8px 20px;border-radius:4px;font-family:'Jost',sans-serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .18s}
+.period-btn:hover{border-color:var(--gold);color:var(--gold)}
+.period-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.kpi-sales::before{background:var(--gold)}
+.kpi-card.kpi-revenue::before{background:var(--green)}
+.kpi-card.kpi-bottles::before{background:var(--red)}
+.kpi-card.kpi-avg::before{background:#6a80a8}
+.kpi-label{font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.kpi-value{font-family:'Cormorant Garamond',serif;font-size:2.1rem;font-weight:300;color:var(--cream);line-height:1}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:5px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+.dash-card h3{font-size:.67rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:110px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar{width:100%;border-radius:3px 3px 0 0;background:var(--gold);opacity:.7;min-height:3px}
+.bar:hover{opacity:1}
+.bar-label{font-size:.58rem;color:var(--muted)}
+.bar-val{font-size:.62rem;color:var(--gold);min-height:14px}
+.top-wines{display:flex;flex-direction:column;gap:10px}
+.top-wine-row{display:flex;align-items:center;gap:10px}
+.top-wine-rank{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold);width:20px;flex-shrink:0}
+.top-wine-bar-wrap{flex:1}
+.top-wine-name{font-size:.78rem;color:var(--text);margin-bottom:4px}
+.top-wine-bar{height:4px;background:var(--gold);border-radius:2px;opacity:.65}
+.top-wine-count{font-size:.7rem;color:var(--muted);width:44px;text-align:right;flex-shrink:0}
+.sales-list{display:flex;flex-direction:column}
+.sale-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(58,45,34,.35)}
+.sale-row:last-child{border-bottom:none}
+.sale-info{flex:1}
+.sale-name{font-family:'Cormorant Garamond',serif;font-size:.95rem;color:var(--cream)}
+.sale-meta{font-size:.68rem;color:var(--muted);margin-top:1px}
+.sale-price{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold-light);margin-left:12px}
+.sale-date{font-size:.65rem;color:var(--muted);margin-left:10px;text-align:right;white-space:nowrap}
+.no-data{font-size:.8rem;color:var(--muted);font-style:italic;padding:20px 0;text-align:center}
+.cave-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px}
+.cave-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 10px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;text-align:center}
+.cave-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:transparent;transition:background .18s}
+.cave-card:hover,.cave-card.active{background:var(--surface2)}
+.cave-card.type-all:hover,.cave-card.type-all.active{border-color:var(--gold)}.cave-card.type-all:hover::after,.cave-card.type-all.active::after{background:var(--gold)}
+.cave-card.type-centrale:hover,.cave-card.type-centrale.active{border-color:var(--gold)}.cave-card.type-centrale:hover::after,.cave-card.type-centrale.active::after{background:var(--gold)}
+.cave-card.type-rouge:hover,.cave-card.type-rouge.active{border-color:#a03040}.cave-card.type-rouge:hover::after,.cave-card.type-rouge.active::after{background:#a03040}
+.cave-card.type-blanc:hover,.cave-card.type-blanc.active{border-color:#c9a96e}.cave-card.type-blanc:hover::after,.cave-card.type-blanc.active::after{background:#c9a96e}
+.cave-card-icon{font-size:1.2rem;margin-bottom:4px}
+.cave-card-name{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text);font-weight:400;margin-bottom:2px}
+.cave-card-sub{font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.cave-card-count{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold);line-height:1}
+.cave-card-bottles{font-size:.58rem;color:var(--muted);margin-top:2px}
+.controls{display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;margin-bottom:12px;align-items:center}
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);width:14px;height:14px;pointer-events:none}
+input[type="text"],input[type="number"],select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'Jost',sans-serif;font-size:.8rem;font-weight:300;letter-spacing:.05em;padding:10px 14px;border-radius:4px;outline:none;transition:border-color .2s;width:100%}
+.search-wrap input{padding-left:38px}
+input:focus,select:focus{border-color:var(--gold)}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;min-width:120px}
+select option{background:var(--surface2)}
+.btn{padding:9px 16px;border-radius:4px;font-family:'Jost',sans-serif;font-size:.72rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border:none;transition:all .18s;white-space:nowrap}
+.btn-primary{background:var(--gold);color:var(--bg)}.btn-primary:hover{background:var(--gold-light)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-danger{background:rgba(139,38,53,.2);border:1px solid rgba(139,38,53,.4);color:#d4788a}.btn-danger:hover{background:rgba(139,38,53,.35)}
+.btn-sell{background:rgba(74,124,89,.2);border:1px solid rgba(74,124,89,.45);color:var(--green-light);font-size:.66rem;padding:5px 9px;border-radius:4px;cursor:pointer;transition:all .15s;font-family:'Jost',sans-serif;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.btn-sell:hover{background:rgba(74,124,89,.35)}.btn-sell:disabled{opacity:.3;cursor:not-allowed}
+.results-info{font-size:.71rem;color:var(--muted);letter-spacing:.07em;margin-bottom:10px}
+.results-info span{color:var(--gold)}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{padding:12px 13px;text-align:left;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none;background:var(--surface2)}
+thead th:hover{color:var(--gold)}
+thead th.sorted{color:var(--gold)}
+thead th .sa{margin-left:3px;opacity:.4;font-size:.56rem}
+thead th.sorted .sa{opacity:1}
+tbody tr{border-bottom:1px solid rgba(58,45,34,.35);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:11px 13px;font-size:.82rem;vertical-align:middle}
+.wine-name-cell{cursor:pointer}
+.wine-name{font-family:'Cormorant Garamond',serif;font-size:.98rem;font-weight:400;color:var(--cream);transition:color .14s;display:flex;align-items:center;gap:5px}
+.wine-name-cell:hover .wine-name{color:var(--gold-light)}
+.link-icon{opacity:0;transition:opacity .14s;font-size:.62rem}
+.wine-name-cell:hover .link-icon{opacity:1}
+.wine-producer{font-size:.7rem;color:var(--muted);margin-top:1px}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:.63rem;letter-spacing:.07em;text-transform:uppercase}
+.b-rouge{background:rgba(139,38,53,.22);color:#d4788a;border:1px solid rgba(139,38,53,.35)}
+.b-blanc{background:rgba(201,169,110,.12);color:var(--gold);border:1px solid rgba(201,169,110,.25)}
+.b-rose{background:rgba(210,100,120,.12);color:#e899aa;border:1px solid rgba(210,100,120,.25)}
+.b-champagne{background:rgba(220,200,140,.1);color:#d4c070;border:1px solid rgba(220,200,140,.2)}
+.b-autre{background:rgba(100,100,100,.15);color:var(--muted);border:1px solid rgba(100,100,100,.2)}
+.price{font-family:'Cormorant Garamond',serif;font-size:.92rem;color:var(--gold-light)}
+.millesime{font-variant-numeric:tabular-nums;letter-spacing:.05em}
+.cave-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;flex-shrink:0}
+.cave-lbl{display:flex;align-items:center;font-size:.7rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.stock-cell{display:flex;align-items:center;gap:7px}
+.stock-num{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:300;min-width:20px}
+.stock-ok{color:var(--cream)}.stock-low{color:#e8a044}.stock-out{color:#d4788a}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sdot-ok{background:var(--green)}.sdot-low{background:#e8a044}.sdot-out{background:#d4788a}
+.actions{display:flex;gap:4px;align-items:center}
+.btn-icon{background:none;border:1px solid transparent;color:var(--muted);cursor:pointer;padding:5px;border-radius:4px;transition:all .14s;display:flex;align-items:center;justify-content:center}
+.btn-icon:hover{border-color:var(--border);color:var(--gold)}
+.btn-icon.del:hover{border-color:rgba(139,38,53,.5);color:#d4788a}
+.empty-state{padding:52px 24px;text-align:center;color:var(--muted)}
+.empty-state p:first-child{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-style:italic;margin-bottom:7px;color:var(--text)}
+.modal-overlay{position:fixed;inset:0;background:rgba(14,11,9,.88);backdrop-filter:blur(5px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .22s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;width:100%;max-width:520px;transform:translateY(12px);transition:transform .22s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:300;color:var(--cream)}
+.modal-body{padding:18px 24px;display:grid;gap:13px}
+.modal-footer{padding:12px 24px 20px;display:flex;gap:10px;justify-content:flex-end}
+.field{display:grid;gap:5px}
+.field label{font-size:.65rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{width:100%}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+#detail-overlay .modal{max-width:780px;max-height:92vh;overflow-y:auto}
+.detail-hero{padding:24px 26px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.detail-title-block{flex:1}
+.detail-type-badge{margin-bottom:9px}
+.detail-name{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:300;color:var(--cream);line-height:1.1;margin-bottom:3px}
+.detail-producer{font-size:.78rem;color:var(--muted)}
+.detail-millesime-big{font-family:'Cormorant Garamond',serif;font-size:3.2rem;font-weight:300;color:var(--gold);line-height:1;text-align:right;flex-shrink:0}
+.detail-millesime-label{font-size:.57rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);text-align:right;margin-top:2px}
+.detail-grid{padding:16px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 24px;border-bottom:1px solid var(--border)}
+.detail-item label{display:block;font-size:.61rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.detail-item span{font-size:.88rem;color:var(--text)}
+.detail-item .price-big{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold-light)}
+.detail-item .stock-big{font-family:'Cormorant Garamond',serif;font-size:1.4rem}
+.detail-sell-section{padding:16px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.detail-sell-section p{font-size:.75rem;color:var(--muted)}
+.sell-controls{display:flex;align-items:center;gap:10px}
+.qty-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Jost',sans-serif;font-size:.9rem;text-align:center;width:56px;padding:7px 8px;border-radius:4px;outline:none}
+.qty-input:focus{border-color:var(--gold)}
+.btn-sell-confirm{background:var(--green);color:#fff;border:none;padding:8px 18px;border-radius:4px;font-family:'Jost',sans-serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .18s}
+.btn-sell-confirm:hover{background:var(--green-light)}
+.btn-sell-confirm:disabled{opacity:.35;cursor:not-allowed}
+.detail-history{padding:16px 26px 20px}
+.detail-history h3{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.history-list{max-height:150px;overflow-y:auto}
+.history-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(58,45,34,.3)}
+.history-row:last-child{border-bottom:none}
+.history-date{color:var(--muted);font-size:.7rem}
+.history-qty{color:var(--green-light);font-family:'Cormorant Garamond',serif;font-size:1rem}
+.history-price{color:var(--gold-light);font-family:'Cormorant Garamond',serif;font-size:1rem}
+.detail-map-section{padding:16px 26px 20px}
+.detail-map-section h3{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+#detail-map{width:100%;height:200px;border-radius:6px;border:1px solid var(--border)}
+.detail-footer{padding:12px 26px 18px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);flex-wrap:wrap}
+.leaflet-popup-content-wrapper{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:'Jost',sans-serif;font-size:.78rem}
+.leaflet-popup-tip{background:var(--surface2)}
+.leaflet-popup-content b{color:var(--gold)}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--surface2);border:1px solid var(--green);color:var(--green-light);padding:12px 20px;border-radius:6px;font-size:.8rem;letter-spacing:.06em;z-index:200;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;max-width:280px}
+.toast.show{opacity:1;transform:translateY(0)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@media(max-width:1024px){.dash-kpis{grid-template-columns:repeat(2,1fr)}.dash-grid{grid-template-columns:1fr}.cave-cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){
+  .cave-cards{grid-template-columns:repeat(2,1fr)}
+  .controls{grid-template-columns:1fr 1fr}.controls .search-wrap{grid-column:1/-1}.btn-primary{grid-column:1/-1}
+  header{flex-direction:column;align-items:flex-start}.header-stats{gap:16px}.stat{text-align:left}
+  .detail-hero{flex-direction:column}.detail-millesime-big{text-align:left}
+  .detail-grid{grid-template-columns:1fr 1fr}.dash-kpis{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Cave à Vin</h2>
+  <p>Connexion en cours…</p>
+</div>
+
+<div class="sync-dot" id="sync-dot" title="Synchronisation"></div>
+
+<div class="app" id="main-app" style="display:none">
+  <header>
+    <div class="header-left">
+      <h1>Ma Cave <span>à Vin</span></h1>
+      <p>Gestion · Ventes · Statistiques</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Références</div></div>
+      <div class="stat"><div class="stat-value" id="stat-bottles">0</div><div class="stat-label">Bouteilles</div></div>
+      <div class="stat"><div class="stat-value" id="stat-value">0 €</div><div class="stat-label">Valeur stock</div></div>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-cave">🍾 Cave</button>
+    <button class="nav-tab" id="tab-dash">📊 Statistiques</button>
+  </div>
+
+  <div class="page active" id="page-cave">
+    <div class="cave-cards" id="cave-cards"></div>
+    <div class="controls">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search" placeholder="Rechercher un vin, domaine, région…">
+      </div>
+      <select id="filter-region"><option value="">Toutes régions</option></select>
+      <select id="filter-millesime"><option value="">Tous millésimes</option></select>
+      <select id="filter-cepage"><option value="">Tous cépages</option></select>
+      <button class="btn btn-primary" id="btn-add">+ Ajouter</button>
+    </div>
+    <div class="results-info" id="results-info"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th id="th-nom" data-key="nom">Vin <span class="sa">↕</span></th>
+            <th id="th-region" data-key="region">Région <span class="sa">↕</span></th>
+            <th id="th-cepage" data-key="cepage">Type <span class="sa">↕</span></th>
+            <th id="th-millesime" data-key="millesime">Mill. <span class="sa">↕</span></th>
+            <th id="th-stock" data-key="stock">Stock <span class="sa">↕</span></th>
+            <th id="th-cave" data-key="cave">Cave <span class="sa">↕</span></th>
+            <th id="th-prix" data-key="prix">Prix <span class="sa">↕</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="wine-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">
+        <p>Aucun vin dans la cave</p>
+        <p style="font-size:.75rem;letter-spacing:.1em">Ajoutez votre premier vin avec le bouton + Ajouter</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-dash">
+    <div class="dash-period">
+      <button class="period-btn active" data-p="day">Aujourd'hui</button>
+      <button class="period-btn" data-p="week">Cette semaine</button>
+      <button class="period-btn" data-p="month">Ce mois</button>
+      <button class="period-btn" data-p="all">Tout</button>
+    </div>
+    <div class="dash-kpis">
+      <div class="kpi-card kpi-sales"><div class="kpi-label">Bouteilles vendues</div><div class="kpi-value" id="kpi-sold">0</div><div class="kpi-sub" id="kpi-sold-sub"></div></div>
+      <div class="kpi-card kpi-revenue"><div class="kpi-label">Chiffre d'affaires</div><div class="kpi-value" id="kpi-revenue">0 €</div><div class="kpi-sub" id="kpi-revenue-sub"></div></div>
+      <div class="kpi-card kpi-bottles"><div class="kpi-label">Stock total restant</div><div class="kpi-value" id="kpi-stock">0</div><div class="kpi-sub" id="kpi-stock-sub"></div></div>
+      <div class="kpi-card kpi-avg"><div class="kpi-label">Prix moyen vendu</div><div class="kpi-value" id="kpi-avg">— €</div><div class="kpi-sub">Par bouteille</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card" style="margin-bottom:0"><h3>Ventes des 7 derniers jours</h3><div class="bar-chart" id="bar-chart"></div></div>
+      <div class="dash-card" style="margin-bottom:0"><h3>Vins les plus vendus</h3><div class="top-wines" id="top-wines"></div></div>
+    </div>
+    <div class="dash-card"><h3>Dernières ventes</h3><div class="sales-list" id="sales-list"></div></div>
+  </div>
+</div>
+
+<!-- MODAL AJOUT/EDIT -->
+<div class="modal-overlay" id="edit-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="edit-title">Ajouter un vin</h2>
+      <button class="btn-icon" id="btn-close-edit"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nom / Appellation *</label><input type="text" id="f-nom" placeholder="Ex: Château Margaux"></div>
+      <div class="field"><label>Producteur / Domaine</label><input type="text" id="f-producteur" placeholder="Ex: Château Margaux"></div>
+      <div class="field-row">
+        <div class="field"><label>Région *</label><input type="text" id="f-region" placeholder="Ex: Bordeaux"></div>
+        <div class="field"><label>Cépage</label><input type="text" id="f-cepage" placeholder="Ex: Cab. Sauvignon"></div>
+      </div>
+      <div class="field-row3">
+        <div class="field"><label>Millésime</label><input type="text" id="f-millesime" placeholder="2019"></div>
+        <div class="field"><label>Prix vente (€)</label><input type="text" id="f-prix" placeholder="45"></div>
+        <div class="field"><label>Stock (bouteilles)</label><input type="number" id="f-stock" placeholder="0" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Cave *</label><select id="f-cave"><option value="">Sélectionner…</option></select></div>
+        <div class="field"><label>Type</label>
+          <select id="f-type">
+            <option value="rouge">Rouge</option><option value="blanc">Blanc</option>
+            <option value="rosé">Rosé</option><option value="champagne">Champagne</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel-edit">Annuler</button>
+      <button class="btn btn-primary" id="btn-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL -->
+<div class="modal-overlay" id="detail-overlay">
+  <div class="modal">
+    <div class="detail-hero">
+      <div class="detail-title-block">
+        <div class="detail-type-badge" id="d-badge"></div>
+        <div class="detail-name" id="d-nom"></div>
+        <div class="detail-producer" id="d-producer"></div>
+      </div>
+      <div>
+        <div class="detail-millesime-big" id="d-millesime"></div>
+        <div class="detail-millesime-label" id="d-millesime-lbl"></div>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Région</label><span id="d-region"></span></div>
+      <div class="detail-item"><label>Cépage</label><span id="d-cepage"></span></div>
+      <div class="detail-item"><label>Cave</label><span id="d-cave"></span></div>
+      <div class="detail-item"><label>Prix de vente</label><span id="d-prix" class="price-big"></span></div>
+      <div class="detail-item"><label>Stock actuel</label><span id="d-stock" class="stock-big"></span></div>
+      <div class="detail-item"><label>Total vendu</label><span id="d-sold"></span></div>
+    </div>
+    <div class="detail-sell-section">
+      <p>Enregistrer une vente</p>
+      <div class="sell-controls">
+        <span style="font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Qté</span>
+        <input type="number" class="qty-input" id="sell-qty" value="1" min="1">
+        <button class="btn-sell-confirm" id="btn-confirm-sell">✓ Vendre</button>
+      </div>
+    </div>
+    <div class="detail-history">
+      <h3>Historique des ventes</h3>
+      <div class="history-list" id="d-history"></div>
+    </div>
+    <div class="detail-map-section" id="d-map-section">
+      <h3>📍 Région d'origine</h3>
+      <div id="detail-map"></div>
+    </div>
+    <div class="detail-footer">
+      <button class="btn btn-danger" id="btn-del-from-detail">🗑️ Supprimer</button>
+      <button class="btn btn-ghost" id="btn-edit-from-detail">✏️ Modifier</button>
+      <button class="btn btn-ghost" id="btn-close-detail">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION SUPPRESSION -->
+<div class="modal-overlay" id="confirm-overlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h2 style="font-size:1.1rem">Supprimer ce vin ?</h2></div>
+    <div class="modal-body" style="gap:8px">
+      <p style="font-size:.88rem;color:var(--cream)" id="confirm-wine-name"></p>
+      <p style="font-size:.78rem;color:#d4788a">⚠️ Le vin et tout son historique de ventes seront supprimés définitivement.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-confirm-cancel">Annuler</button>
+      <button class="btn btn-danger" id="btn-confirm-delete">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, remove, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC8OgrDoj-D5tpWDlIK7EmEiIM0_Bwuhig",
+  authDomain: "cave-2004.firebaseapp.com",
+  databaseURL: "https://cave-2004-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "cave-2004",
+  storageBucket: "cave-2004.firebasestorage.app",
+  messagingSenderId: "142269678134",
+  appId: "1:142269678134:web:48805cde3f78a65531ce97"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const CAVES = [
+  {id:'centrale',label:'Cave Centrale',sub:'Principale',icon:'🏛️',color:'#c9a96e',type:'centrale'},
+  {id:'rouge1',label:'Rouge 1',sub:'Vins rouges',icon:'🍷',color:'#a03040',type:'rouge'},
+  {id:'rouge2',label:'Rouge 2',sub:'Vins rouges',icon:'🍷',color:'#8b2635',type:'rouge'},
+  {id:'blanc3',label:'Blanc 3',sub:'Vins blancs',icon:'🥂',color:'#c9a96e',type:'blanc'},
+  {id:'blanc4',label:'Blanc 4',sub:'Vins blancs',icon:'🥂',color:'#e8c98a',type:'blanc'}
+];
+
+const RC = {
+  'bordeaux':[44.837,-0.579],'saint-émilion':[44.894,-0.155],'pomerol':[44.919,-0.185],
+  'médoc':[45.18,-0.82],'sauternes':[44.565,-0.34],'bourgogne':[47.05,4.85],
+  'chablis':[47.81,3.8],'champagne':[49.05,4.0],'alsace':[48.32,7.44],
+  'rhône':[45.13,4.82],'vallée du rhône':[45.13,4.82],'châteauneuf-du-pape':[44.06,4.83],
+  'loire':[47.41,0.7],'sancerre':[47.33,2.84],'pouilly-fumé':[47.29,2.96],
+  'provence':[43.53,5.44],'bandol':[43.14,5.75],'languedoc':[43.61,3.87],
+  'roussillon':[42.69,2.87],'beaujolais':[46.15,4.65],'jura':[46.67,5.55],
+  'savoie':[45.57,6.08],'corse':[42.04,9.01],'sud-ouest':[43.6,0.59],
+  'cahors':[44.45,1.44],'rioja':[42.46,-2.44],'ribera del duero':[41.65,-3.68],
+  'toscane':[43.47,11.25],'chianti':[43.47,11.27],'brunello':[43.05,11.48],
+  'barolo':[44.61,7.94],'barbaresco':[44.69,8.07],'piémont':[44.73,7.93],
+  'veneto':[45.44,11.0],'sicile':[37.6,14.0],'porto':[41.15,-8.61],
+  'douro':[41.15,-7.8],'napa valley':[38.5,-122.4],'sonoma':[38.3,-122.7],
+  'mendoza':[-32.88,-68.84],'marlborough':[-41.5,173.96],'barossa':[-34.52,138.95],
+  'mosel':[50.0,7.1],'rheingau':[50.02,8.0],'tokaj':[48.12,21.4]
+};
+
+function getCoords(r) {
+  if (!r) return null;
+  const s = r.toLowerCase().trim();
+  for (const k of Object.keys(RC)) {
+    if (s === k || s.includes(k) || k.includes(s)) return RC[k];
+  }
+  return null;
+}
+
+// ── ÉTAT ──────────────────────────────────────────────────────────────────
+let wines = [];
+let sales = [];
+let editingId = null;
+let detailId = null;
+let pendingDeleteId = null;
+let activeCave = 'all';
+let sortKey = 'nom';
+let sortDir = 1;
+let activePeriod = 'day';
+let activePage = 'cave';
+let leafMap = null;
+
+// ── UTILITAIRES ───────────────────────────────────────────────────────────
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const bc = t => ({rouge:'b-rouge',blanc:'b-blanc','rosé':'b-rose',champagne:'b-champagne'}[t]||'b-autre');
+const fmt = n => Number(n).toLocaleString('fr-FR');
+const fmtDate = iso => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+};
+const sClass = s => s <= 0 ? 'stock-out' : s <= 3 ? 'stock-low' : 'stock-ok';
+const sdClass = s => s <= 0 ? 'sdot sdot-out' : s <= 3 ? 'sdot sdot-low' : 'sdot sdot-ok';
+const findWine = id => wines.find(w => w.id === id) || null;
+const findCave = id => CAVES.find(c => c.id === id) || null;
+
+function startOf(p) {
+  const n = new Date();
+  if (p === 'day') { const d = new Date(n); d.setHours(0,0,0,0); return d; }
+  if (p === 'week') { const d = new Date(n); d.setHours(0,0,0,0); const day = d.getDay()||7; d.setDate(d.getDate()-day+1); return d; }
+  if (p === 'month') return new Date(n.getFullYear(), n.getMonth(), 1);
+  return new Date(0);
+}
+const getSalesIn = p => { const s = startOf(p); return sales.filter(x => new Date(x.date) >= s); };
+
+function showToast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function setSyncState(state) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+}
+
+// ── FIREBASE ÉCRITURE ─────────────────────────────────────────────────────
+function fbSetWine(wine) {
+  setSyncState('syncing');
+  set(ref(db, 'wines/' + wine.id), wine)
+    .then(() => setSyncState('ok'))
+    .catch(() => setSyncState('error'));
+}
+
+function fbDeleteWine(id) {
+  setSyncState('syncing');
+  remove(ref(db, 'wines/' + id))
+    .then(() => setSyncState('ok'))
+    .catch(() => setSyncState('error'));
+}
+
+function fbSetSale(sale) {
+  setSyncState('syncing');
+  set(ref(db, 'sales/' + sale.id), sale)
+    .then(() => setSyncState('ok'))
+    .catch(() => setSyncState('error'));
+}
+
+function fbDeleteSale(id) {
+  remove(ref(db, 'sales/' + id));
+}
+
+// ── CAVE CARDS ────────────────────────────────────────────────────────────
+function buildCards() {
+  const wrap = document.getElementById('cave-cards');
+  wrap.innerHTML = '';
+  const mk = (id, icon, name, sub, refs, bot, type) => {
+    const d = document.createElement('div');
+    d.className = 'cave-card type-' + type + (activeCave === id ? ' active' : '');
+    d.innerHTML = `<div class="cave-card-icon">${icon}</div><div class="cave-card-name">${esc(name)}</div><div class="cave-card-sub">${esc(sub)}</div><div class="cave-card-count">${refs}</div><div class="cave-card-bottles">${bot} bouteille${bot!==1?'s':''}</div>`;
+    d.addEventListener('click', () => { activeCave = id; buildCards(); render(); });
+    wrap.appendChild(d);
+  };
+  const ab = wines.reduce((a, w) => a + (Number(w.stock)||0), 0);
+  mk('all','🗂️','Toutes','Collection', wines.length, ab, 'all');
+  for (const c of CAVES) {
+    const wc = wines.filter(w => w.cave === c.id);
+    mk(c.id, c.icon, c.label, c.sub, wc.length, wc.reduce((a,w)=>a+(Number(w.stock)||0),0), c.type);
+  }
+}
+
+function populateCaveSelect() {
+  const s = document.getElementById('f-cave');
+  s.innerHTML = '<option value="">Sélectionner…</option>';
+  CAVES.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.label; s.appendChild(o); });
+}
+
+// ── FILTRES ───────────────────────────────────────────────────────────────
+function updateFilters() {
+  const R = [], M = [], C = [];
+  wines.forEach(w => {
+    if (w.region && !R.includes(w.region)) R.push(w.region);
+    if (w.millesime && !M.includes(w.millesime)) M.push(w.millesime);
+    if (w.cepage && !C.includes(w.cepage)) C.push(w.cepage);
+  });
+  R.sort(); C.sort(); M.sort((a,b) => b-a);
+  const so = (id, items, lbl) => {
+    const el = document.getElementById(id), cur = el.value;
+    el.innerHTML = `<option value="">${lbl}</option>` + items.map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('');
+    el.value = cur;
+  };
+  so('filter-region', R, 'Toutes régions');
+  so('filter-millesime', M, 'Tous millésimes');
+  so('filter-cepage', C, 'Tous cépages');
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  updateFilters();
+  const search = document.getElementById('search').value.toLowerCase();
+  const region = document.getElementById('filter-region').value;
+  const millesime = document.getElementById('filter-millesime').value;
+  const cepage = document.getElementById('filter-cepage').value;
+
+  let list = wines.filter(w => {
+    if (activeCave !== 'all' && w.cave !== activeCave) return false;
+    if (region && w.region !== region) return false;
+    if (millesime && String(w.millesime) !== millesime) return false;
+    if (cepage && w.cepage !== cepage) return false;
+    if (search) {
+      const h = [w.nom,w.producteur,w.region,w.cepage,w.millesime].join(' ').toLowerCase();
+      if (!h.includes(search)) return false;
+    }
+    return true;
+  });
+
+  list.sort((a, b) => {
+    let va = a[sortKey]||'', vb = b[sortKey]||'';
+    if (['millesime','prix','stock'].includes(sortKey)) { va = Number(va); vb = Number(vb); }
+    else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+    return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
+  });
+
+  const tb = wines.reduce((a,w) => a+(Number(w.stock)||0), 0);
+  const tv = wines.reduce((a,w) => a+(Number(w.prix)||0)*(Number(w.stock)||0), 0);
+  document.getElementById('stat-total').textContent = wines.length;
+  document.getElementById('stat-bottles').textContent = tb;
+  document.getElementById('stat-value').textContent = fmt(tv) + ' €';
+  document.getElementById('results-info').innerHTML = `<span>${list.length}</span> vin${list.length!==1?'s':''} affiché${list.length!==1?'s':''}`;
+
+  const tbody = document.getElementById('wine-tbody');
+  const empty = document.getElementById('empty-state');
+  if (!list.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = list.map(w => {
+    const cave = findCave(w.cave);
+    const st = Number(w.stock)||0;
+    const dot = cave ? cave.color : '#7a6a58';
+    return `<tr>
+      <td class="wine-name-cell" data-id="${w.id}"><div class="wine-name">${esc(w.nom)} <span class="link-icon">↗</span></div>${w.producteur?`<div class="wine-producer">${esc(w.producteur)}</div>`:''}</td>
+      <td>${esc(w.region||'—')}</td>
+      <td>${w.type?`<span class="badge ${bc(w.type)}">${esc(w.type)}</span>`:'—'}${w.cepage?`<div style="font-size:.68rem;color:var(--muted);margin-top:2px">${esc(w.cepage)}</div>`:''}</td>
+      <td><span class="millesime">${esc(w.millesime||'—')}</span></td>
+      <td><div class="stock-cell"><span class="${sdClass(st)}"></span><span class="stock-num ${sClass(st)}">${st}</span></div></td>
+      <td><span class="cave-lbl"><span class="cave-dot" style="background:${dot}"></span>${cave?esc(cave.label):'—'}</span></td>
+      <td><span class="price">${w.prix?fmt(w.prix)+' €':'—'}</span></td>
+      <td><div class="actions">
+        <button class="btn-sell btn-sell-row" data-id="${w.id}"${st<=0?' disabled':''}>−1 Vente</button>
+        <button class="btn-icon btn-edit-row" data-id="${w.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="btn-icon del btn-del-row" data-id="${w.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+      </div></td></tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.wine-name-cell').forEach(el => el.addEventListener('click', () => openDetail(el.dataset.id)));
+  tbody.querySelectorAll('.btn-sell-row').forEach(el => el.addEventListener('click', e => { e.stopPropagation(); quickSell(el.dataset.id, 1); }));
+  tbody.querySelectorAll('.btn-edit-row').forEach(el => el.addEventListener('click', e => { e.stopPropagation(); openEditModal(el.dataset.id); }));
+  tbody.querySelectorAll('.btn-del-row').forEach(el => el.addEventListener('click', e => { e.stopPropagation(); deleteWine(el.dataset.id); }));
+}
+
+// ── VENTE ─────────────────────────────────────────────────────────────────
+function quickSell(id, qty) {
+  const w = findWine(id); if (!w) return;
+  qty = Math.min(qty, Number(w.stock)||0);
+  if (qty <= 0) return;
+  w.stock = (Number(w.stock)||0) - qty;
+  const sale = { id: 's' + Date.now() + Math.random().toString(36).slice(2), wineId: id, qty, price: Number(w.prix)||0, date: new Date().toISOString() };
+  sales.push(sale);
+  fbSetWine(w);
+  fbSetSale(sale);
+  showToast(`✓ ${qty} bouteille${qty>1?'s':''} vendue${qty>1?'s':''} — ${w.nom}`);
+  buildCards(); render();
+  if (activePage === 'dash') renderDash();
+}
+
+// ── TRI ───────────────────────────────────────────────────────────────────
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  const th = document.getElementById('th-' + key); if (th) th.classList.add('sorted');
+  render();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function renderDash() {
+  const ps = getSalesIn(activePeriod);
+  const tq = ps.reduce((a,s) => a+s.qty, 0);
+  const tr = ps.reduce((a,s) => a+s.qty*s.price, 0);
+  const avg = tq > 0 ? tr/tq : 0;
+  const ts = wines.reduce((a,w) => a+(Number(w.stock)||0), 0);
+  const lc = wines.filter(w => (Number(w.stock)||0) <= 3).length;
+  const lbl = {day:"Aujourd'hui", week:'Cette semaine', month:'Ce mois', all:'Depuis le début'}[activePeriod];
+
+  document.getElementById('kpi-sold').textContent = tq;
+  document.getElementById('kpi-sold-sub').textContent = lbl;
+  document.getElementById('kpi-revenue').textContent = fmt(Math.round(tr)) + ' €';
+  document.getElementById('kpi-revenue-sub').textContent = lbl;
+  document.getElementById('kpi-stock').textContent = ts;
+  document.getElementById('kpi-stock-sub').textContent = lc > 0 ? `${lc} réf. stock bas ⚠️` : 'Stock OK ✓';
+  document.getElementById('kpi-avg').textContent = avg > 0 ? fmt(Math.round(avg)) + ' €' : '— €';
+
+  // Barres 7 jours
+  const bars = document.getElementById('bar-chart'); bars.innerHTML = '';
+  const days = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(6-i));
+    const nd = new Date(d); nd.setDate(nd.getDate()+1);
+    const q = sales.filter(s => { const sd = new Date(s.date); return sd >= d && sd < nd; }).reduce((a,s) => a+s.qty, 0);
+    return { label: d.toLocaleDateString('fr-FR',{weekday:'short'}), qty: q };
+  });
+  const mx = Math.max(...days.map(d => d.qty), 1);
+  bars.innerHTML = days.map(d => {
+    const pct = Math.max(4, Math.round(d.qty/mx*100));
+    return `<div class="bar-wrap"><div class="bar-val">${d.qty>0?d.qty:''}</div><div style="flex:1;display:flex;align-items:flex-end;width:100%"><div class="bar" style="height:${pct}%"></div></div><div class="bar-label">${d.label}</div></div>`;
+  }).join('');
+
+  // Top vins
+  const cnt = {};
+  ps.forEach(s => { cnt[s.wineId] = (cnt[s.wineId]||0) + s.qty; });
+  const tops = Object.entries(cnt).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const tw = document.getElementById('top-wines');
+  if (!tops.length) { tw.innerHTML = '<div class="no-data">Aucune vente sur cette période</div>'; }
+  else tw.innerHTML = tops.map(([id,qty],i) => {
+    const wn = findWine(id);
+    const pct = Math.max(8, Math.round(qty/tops[0][1]*100));
+    return `<div class="top-wine-row"><div class="top-wine-rank">${i+1}</div><div class="top-wine-bar-wrap"><div class="top-wine-name">${esc(wn?wn.nom:'Vin supprimé')}</div><div class="top-wine-bar" style="width:${pct}%"></div></div><div class="top-wine-count">${qty} btl</div></div>`;
+  }).join('');
+
+  // Dernières ventes
+  const sl = document.getElementById('sales-list');
+  const recent = [...sales].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,15);
+  if (!recent.length) { sl.innerHTML = '<div class="no-data">Aucune vente enregistrée</div>'; return; }
+  sl.innerHTML = recent.map(s => {
+    const wn = findWine(s.wineId), cave = wn ? findCave(wn.cave) : null;
+    return `<div class="sale-row"><div class="sale-info"><div class="sale-name">${esc(wn?wn.nom:'Vin supprimé')}</div><div class="sale-meta">${cave?esc(cave.label):''}${wn&&wn.millesime?' · '+wn.millesime:''}</div></div><div class="sale-price">${s.price?fmt(s.price*s.qty)+' €':'—'}</div><div class="sale-date">${fmtDate(s.date)}<br><span style="color:var(--green-light)">×${s.qty}</span></div></div>`;
+  }).join('');
+}
+
+// ── FICHE DÉTAIL ──────────────────────────────────────────────────────────
+function openDetail(id) {
+  const w = findWine(id); if (!w) return;
+  detailId = id;
+  const cave = findCave(w.cave);
+  document.getElementById('d-badge').innerHTML = w.type ? `<span class="badge ${bc(w.type)}">${esc(w.type)}</span>` : '';
+  document.getElementById('d-nom').textContent = w.nom||'';
+  document.getElementById('d-producer').textContent = w.producteur||'';
+  document.getElementById('d-region').textContent = w.region||'—';
+  document.getElementById('d-cepage').textContent = w.cepage||'—';
+  document.getElementById('d-cave').textContent = cave ? cave.label : '—';
+  document.getElementById('d-prix').textContent = w.prix ? fmt(w.prix)+' €' : '—';
+  document.getElementById('d-millesime').textContent = w.millesime||'';
+  document.getElementById('d-millesime-lbl').textContent = w.millesime ? 'Millésime' : '';
+  const st = Number(w.stock)||0;
+  const se = document.getElementById('d-stock');
+  se.textContent = st + ' bouteille' + (st!==1?'s':''); se.className = 'stock-big '+sClass(st);
+  const stot = sales.filter(s => s.wineId === id).reduce((a,s) => a+s.qty, 0);
+  document.getElementById('d-sold').textContent = stot + ' bouteille' + (stot!==1?'s':'');
+  document.getElementById('sell-qty').value = 1;
+  document.getElementById('sell-qty').max = st;
+  document.getElementById('btn-confirm-sell').disabled = st <= 0;
+
+  const ws = sales.filter(s => s.wineId === id).sort((a,b) => new Date(b.date)-new Date(a.date));
+  const hist = document.getElementById('d-history');
+  hist.innerHTML = !ws.length ? '<div class="no-data">Aucune vente</div>' :
+    ws.slice(0,10).map(s => `<div class="history-row"><span class="history-date">${fmtDate(s.date)}</span><span class="history-qty">×${s.qty}</span><span class="history-price">${s.price?fmt(s.price*s.qty)+' €':'—'}</span></div>`).join('');
+
+  const coords = getCoords(w.region);
+  const ms = document.getElementById('d-map-section');
+  if (coords) {
+    ms.style.display = '';
+    setTimeout(() => {
+      if (leafMap) { leafMap.remove(); leafMap = null; }
+      leafMap = L.map('detail-map',{zoomControl:true,attributionControl:false}).setView(coords,8);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(leafMap);
+      const ri = L.divIcon({html:'<div style="width:13px;height:13px;background:#c0392b;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 10px rgba(192,57,43,.9)"></div>',className:'',iconSize:[13,13],iconAnchor:[6.5,6.5]});
+      L.marker(coords,{icon:ri}).addTo(leafMap).bindPopup(`<b>${esc(w.region||'')}</b>${w.nom?'<br>'+esc(w.nom):''}`).openPopup();
+    }, 80);
+  } else ms.style.display = 'none';
+
+  document.getElementById('detail-overlay').classList.add('open');
+}
+function closeDetailModal() { document.getElementById('detail-overlay').classList.remove('open'); detailId = null; }
+
+// ── SUPPRESSION ───────────────────────────────────────────────────────────
+function deleteWine(id) {
+  const w = findWine(id); if (!w) return;
+  pendingDeleteId = id;
+  document.getElementById('confirm-wine-name').textContent = w.nom + (w.millesime ? ' · ' + w.millesime : '');
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function confirmDelete() {
+  const id = pendingDeleteId; if (!id) return;
+  // Supprimer le vin
+  wines = wines.filter(w => w.id !== id);
+  fbDeleteWine(id);
+  // Supprimer toutes les ventes associées
+  const toDelete = sales.filter(s => s.wineId === id).map(s => s.id);
+  sales = sales.filter(s => s.wineId !== id);
+  toDelete.forEach(sid => fbDeleteSale(sid));
+  pendingDeleteId = null;
+  document.getElementById('confirm-overlay').classList.remove('open');
+  buildCards(); render();
+  if (activePage === 'dash') renderDash();
+  showToast('🗑️ Vin supprimé');
+}
+
+// ── FORMULAIRE ────────────────────────────────────────────────────────────
+function openEditModal(id) {
+  const w = id ? findWine(id) : null;
+  editingId = w ? w.id : null;
+  document.getElementById('edit-title').textContent = w ? 'Modifier le vin' : 'Ajouter un vin';
+  document.getElementById('f-nom').value = w ? w.nom||'' : '';
+  document.getElementById('f-producteur').value = w ? w.producteur||'' : '';
+  document.getElementById('f-region').value = w ? w.region||'' : '';
+  document.getElementById('f-cepage').value = w ? w.cepage||'' : '';
+  document.getElementById('f-millesime').value = w ? w.millesime||'' : '';
+  document.getElementById('f-prix').value = w ? w.prix||'' : '';
+  document.getElementById('f-stock').value = w ? w.stock||0 : 0;
+  document.getElementById('f-cave').value = w ? w.cave||'' : '';
+  document.getElementById('f-type').value = w ? w.type||'rouge' : 'rouge';
+  document.getElementById('edit-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-nom').focus(), 100);
+}
+function closeEditModal() { document.getElementById('edit-overlay').classList.remove('open'); editingId = null; }
+
+function saveWine() {
+  const nom = document.getElementById('f-nom').value.trim();
+  const cave = document.getElementById('f-cave').value;
+  if (!nom || !cave) { alert('Veuillez renseigner le nom et la cave.'); return; }
+  const wine = {
+    id: editingId || ('w' + Date.now()),
+    nom, producteur: document.getElementById('f-producteur').value.trim(),
+    region: document.getElementById('f-region').value.trim(),
+    cepage: document.getElementById('f-cepage').value.trim(),
+    millesime: document.getElementById('f-millesime').value.trim(),
+    prix: document.getElementById('f-prix').value.trim(),
+    stock: Math.max(0, parseInt(document.getElementById('f-stock').value)||0),
+    cave, type: document.getElementById('f-type').value
+  };
+  if (editingId) { const i = wines.findIndex(w => w.id === editingId); if (i >= 0) wines[i] = wine; }
+  else wines.push(wine);
+  fbSetWine(wine);
+  closeEditModal(); buildCards(); render();
+}
+
+// ── DÉMARRAGE ─────────────────────────────────────────────────────────────
+function startApp() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  buildCards(); populateCaveSelect(); render();
+
+  // Navigation
+  document.getElementById('tab-cave').addEventListener('click', () => {
+    activePage = 'cave';
+    document.getElementById('tab-cave').classList.add('active'); document.getElementById('tab-dash').classList.remove('active');
+    document.getElementById('page-cave').classList.add('active'); document.getElementById('page-dash').classList.remove('active');
+  });
+  document.getElementById('tab-dash').addEventListener('click', () => {
+    activePage = 'dash';
+    document.getElementById('tab-dash').classList.add('active'); document.getElementById('tab-cave').classList.remove('active');
+    document.getElementById('page-dash').classList.add('active'); document.getElementById('page-cave').classList.remove('active');
+    renderDash();
+  });
+
+  document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => {
+    activePeriod = btn.dataset.p;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); renderDash();
+  }));
+
+  document.getElementById('search').addEventListener('input', render);
+  ['filter-region','filter-millesime','filter-cepage'].forEach(id => document.getElementById(id).addEventListener('change', render));
+
+  document.getElementById('btn-add').addEventListener('click', () => openEditModal(null));
+  document.getElementById('btn-close-edit').addEventListener('click', closeEditModal);
+  document.getElementById('btn-cancel-edit').addEventListener('click', closeEditModal);
+  document.getElementById('btn-save').addEventListener('click', saveWine);
+  document.getElementById('btn-close-detail').addEventListener('click', closeDetailModal);
+  document.getElementById('btn-edit-from-detail').addEventListener('click', () => { const id = detailId; closeDetailModal(); if (id) openEditModal(id); });
+  document.getElementById('btn-del-from-detail').addEventListener('click', () => { const id = detailId; closeDetailModal(); if (id) deleteWine(id); });
+  document.getElementById('btn-confirm-sell').addEventListener('click', () => { if (!detailId) return; quickSell(detailId, parseInt(document.getElementById('sell-qty').value)||1); closeDetailModal(); });
+  document.getElementById('btn-confirm-cancel').addEventListener('click', () => { pendingDeleteId = null; document.getElementById('confirm-overlay').classList.remove('open'); });
+  document.getElementById('btn-confirm-delete').addEventListener('click', confirmDelete);
+
+  document.querySelectorAll('thead th[data-key]').forEach(th => th.addEventListener('click', () => sortBy(th.dataset.key)));
+  document.getElementById('edit-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
+  document.getElementById('detail-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetailModal(); });
+  document.getElementById('confirm-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) { pendingDeleteId = null; e.currentTarget.classList.remove('open'); } });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeEditModal(); closeDetailModal(); pendingDeleteId = null; document.getElementById('confirm-overlay').classList.remove('open'); }
+  });
+}
+
+// ── ÉCOUTE FIREBASE EN TEMPS RÉEL ────────────────────────────────────────
+setSyncState('syncing');
+
+onValue(ref(db, 'wines'), snapshot => {
+  const data = snapshot.val();
+  wines = data ? Object.values(data) : [];
+  if (document.getElementById('main-app').style.display !== 'none') {
+    buildCards(); render();
+    if (activePage === 'dash') renderDash();
+  }
+});
+
+onValue(ref(db, 'sales'), snapshot => {
+  const data = snapshot.val();
+  sales = data ? Object.values(data) : [];
+  setSyncState('ok');
+  if (document.getElementById('main-app').style.display !== 'none') {
+    if (activePage === 'dash') renderDash();
+    render();
+  } else {
+    startApp();
+  }
+});
+
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
