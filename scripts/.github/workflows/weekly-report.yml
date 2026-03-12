@@ -1,0 +1,33 @@
+name: Récapitulatif hebdomadaire Cave à Vin
+
+on:
+  schedule:
+    # Chaque lundi à 8h00 (heure Paris = UTC+1, donc 7h UTC)
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+    # Permet de lancer manuellement depuis GitHub pour tester
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install node-fetch@3
+
+      - name: Générer et envoyer le rapport
+        env:
+          FIREBASE_URL: ${{ secrets.FIREBASE_URL }}
+          EMAILJS_SERVICE_ID: ${{ secrets.EMAILJS_SERVICE_ID }}
+          EMAILJS_TEMPLATE_ID: ${{ secrets.EMAILJS_TEMPLATE_ID }}
+          EMAILJS_PUBLIC_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY }}
+          EMAILJS_PRIVATE_KEY: ${{ secrets.EMAILJS_PRIVATE_KEY }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: node scripts/weekly-report.js
