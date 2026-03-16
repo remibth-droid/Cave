@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Velox Gestion — DA Instagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#090705;--s:#120e09;--s2:#1a1410;--b:#28200f;--gold:#d4a843;--gl:#f0c85a;--cream:#f7eed8;--muted:#7a6a50;--text:#e8dac0;--green:#3d6b4a;--red:#a03040}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);padding:48px;max-width:960px;margin:0 auto;line-height:1.6}
+h1{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:300;color:var(--cream);margin-bottom:6px}
+h1 em{color:var(--gold);font-style:italic}
+.kicker{font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:48px;display:block}
+h2{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;color:var(--cream);margin:48px 0 16px;padding-bottom:10px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:12px}
+h2 span{color:var(--gold)}
+h3{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:24px 0 10px}
+p{font-size:.8rem;color:var(--text);line-height:1.8;margin-bottom:12px}
+
+.card{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:20px 24px;margin-bottom:12px}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--cream);margin-bottom:8px}
+.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;margin:2px}
+.tag-gold{background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.25)}
+.tag-green{background:rgba(61,107,74,.12);color:#5a9468;border:1px solid rgba(61,107,74,.25)}
+.tag-red{background:rgba(160,48,64,.12);color:#d4788a;border:1px solid rgba(160,48,64,.25)}
+
+.bio-box{background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:16px 20px;font-family:monospace;font-size:.78rem;color:var(--cream);line-height:1.9;white-space:pre-wrap;margin-bottom:8px}
+.copy-note{font-size:.62rem;color:var(--muted);margin-bottom:16px}
+
+.post-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.post-card{background:var(--s);border:1px solid var(--b);border-radius:8px;overflow:hidden}
+.post-card-top{height:6px}
+.post-card-top.gold{background:linear-gradient(to right,var(--gl),var(--gold))}
+.post-card-top.green{background:linear-gradient(to right,#5a9468,#3d6b4a)}
+.post-card-top.dim{background:var(--b)}
+.post-card-body{padding:16px}
+.post-type{font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.post-title{font-family:'Cormorant Garamond',serif;font-size:.95rem;color:var(--cream);margin-bottom:8px;line-height:1.3}
+.post-caption{font-size:.68rem;color:var(--muted);line-height:1.7;font-style:italic}
+.post-caption strong{color:var(--text);font-style:normal}
+
+.hashtag-block{background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:14px 18px;font-size:.72rem;color:var(--gold);line-height:2;word-break:break-word}
+.highlight-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.hl-item{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:16px 12px;text-align:center}
+.hl-icon{font-size:1.8rem;margin-bottom:6px}
+.hl-name{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.hl-desc{font-size:.58rem;color:var(--muted);margin-top:4px}
+
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rule-do{background:rgba(61,107,74,.08);border:1px solid rgba(61,107,74,.2);border-radius:6px;padding:14px 16px}
+.rule-dont{background:rgba(160,48,64,.08);border:1px solid rgba(160,48,64,.2);border-radius:6px;padding:14px 16px}
+.rule-label{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.rule-label.yes{color:#5a9468}
+.rule-label.no{color:#d4788a}
+.rule-text{font-size:.72rem;color:var(--text);line-height:1.7}
+
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px}
+.cal-day{text-align:center}
+.cal-day-name{font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.cal-slot{background:var(--s);border:1px solid var(--b);border-radius:4px;padding:6px 4px;min-height:50px;font-size:.58rem;color:var(--text);line-height:1.4}
+.cal-slot.active{border-color:rgba(212,168,67,.4);background:rgba(212,168,67,.05)}
+.cal-slot.rest{opacity:.3}
+
+footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--b);font-size:.6rem;color:var(--muted);display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+
+<img src="logo-velox.png" alt="Velox Gestion" style="height:60px;width:auto;margin-bottom:20px">
+<h1>DA <em>Instagram</em></h1>
+<span class="kicker">Direction artistique · Stratégie de contenu · Velox Gestion · 2026</span>
+
+<!-- ─── PROFIL ─────────────────────────────────────────────── -->
+<h2>01 · <span>Photo de profil</span></h2>
+<p>Utilise l'image <strong>01_profil_1080x1080.png</strong> — le logo VG encadré sur fond noir. Instagram recadre en cercle : le carré doré est parfaitement centré et lisible même à 40px.</p>
+<div class="card">
+  <div class="card-title">✅ Règles photo de profil</div>
+  <p style="margin:0;font-size:.75rem">Fond noir <strong>#090705</strong> uniquement. Jamais de fond blanc ou coloré. Le logo doit occuper ~70% du cercle. Ne jamais rogner les lettres VG.</p>
+</div>
+
+<!-- ─── BIO ────────────────────────────────────────────────── -->
+<h2>02 · <span>Bio Instagram</span></h2>
+<h3>Version principale</h3>
+<div class="bio-box">🍷 Velox Gestion
+Logiciel de cave pour restaurateurs
+📊 Dashboard · Marges · Sommelier IA
+📱 Depuis votre iPhone — 199€ à vie
+👇 Essai gratuit disponible</div>
+<p class="copy-note">150 caractères max. Emoji en début de ligne = rupture visuelle lisible sur mobile.</p>
+
+<h3>Version alternative (si tu veux mettre le lien en avant)</h3>
+<div class="bio-box">🍷 Gérez votre cave comme un pro
+Stock · Ventes · Marges · IA Sommelier
+PWA iPhone — Accès immédiat
+🔗 veloxgestion.fr</div>
+
+<h3>Lien en bio</h3>
+<div class="card">
+  <div class="card-title">Utilise Linktree ou Beacons.ai (gratuit)</div>
+  <p style="font-size:.73rem;margin:0">Crée une page avec 3 boutons : <strong>"Voir l'app"</strong> → veloxgestion.fr, <strong>"Essai gratuit"</strong> → paiement.html, <strong>"Nous contacter"</strong> → mailto:veloxassistancep@gmail.com</p>
+</div>
+
+<!-- ─── HIGHLIGHTS ─────────────────────────────────────────── -->
+<h2>03 · <span>Stories à la une (Highlights)</span></h2>
+<p>Les highlights sont ta vitrine permanente. Un visiteur qui arrive sur ton profil les voit en premier. Crée exactement ces 5 catégories dans cet ordre :</p>
+<div class="highlight-row">
+  <div class="hl-item"><div class="hl-icon">🍷</div><div class="hl-name">L'App</div><div class="hl-desc">Présentation générale, démo</div></div>
+  <div class="hl-item"><div class="hl-icon">📊</div><div class="hl-name">Features</div><div class="hl-desc">Chaque fonctionnalité clé</div></div>
+  <div class="hl-item"><div class="hl-icon">💰</div><div class="hl-name">Tarifs</div><div class="hl-desc">Prix, ce qui est inclus</div></div>
+  <div class="hl-item"><div class="hl-icon">⭐</div><div class="hl-name">Avis</div><div class="hl-desc">Témoignages clients</div></div>
+  <div class="hl-item"><div class="hl-icon">❓</div><div class="hl-name">FAQ</div><div class="hl-desc">Questions fréquentes</div></div>
+</div>
+<p>Utilise les covers <strong>06_highlight_*.png</strong> comme icônes de couverture. Elles ont le fond noir avec cercle doré — identique à ton logo.</p>
+
+<!-- ─── STORIES ─────────────────────────────────────────────── -->
+<h2>04 · <span>Stories — Templates & Textes</span></h2>
+
+<h3>Story de lancement (utilise 02_story_lancement)</h3>
+<div class="card">
+  <div class="card-title">Texte à ajouter par-dessus dans Instagram</div>
+  <div class="post-caption" style="font-style:normal;font-size:.76rem;line-height:2">
+    <strong style="color:var(--cream);display:block;font-size:1rem;margin-bottom:8px">Velox Gestion est là. 🍷</strong>
+    Gérez votre cave à vin depuis votre iPhone.<br>
+    Stock · Ventes · Marges · Sommelier IA<br><br>
+    <strong style="color:var(--gold)">199€ — Accès à vie.</strong><br>
+    Lien en bio 👆
+  </div>
+</div>
+
+<h3>Story fonctionnalités (utilise 03_story_features)</h3>
+<div class="card">
+  <div class="card-title">Ajouter sur chaque box (sticker texte)</div>
+  <div class="post-caption" style="font-style:normal;font-size:.73rem;line-height:2">
+    🏛️ <strong>Multi-caves</strong> — Organisez par cave, type, région<br>
+    📊 <strong>Dashboard</strong> — CA, marges, rotation en temps réel<br>
+    🤖 <strong>Sommelier IA</strong> — Posez vos questions en français<br>
+    📷 <strong>Photo étiquette</strong> — L'IA reconnaît le vin automatiquement<br>
+    📄 <strong>Export PDF</strong> — Inventaire, bilan marges, carnet légal<br>
+    👥 <strong>Accès employé</strong> — Vos serveurs voient le stock, pas vos marges
+  </div>
+</div>
+
+<h3>Story tarif (utilise 04_story_tarif)</h3>
+<div class="card">
+  <div class="card-title">Texte à superposer</div>
+  <div class="post-caption" style="font-style:normal;font-size:.76rem;line-height:2">
+    <strong style="color:var(--cream);font-size:1.1rem">199 €</strong><br>
+    <span style="color:var(--gold)">Licence à vie · Paiement unique</span><br><br>
+    ✓ Toutes les fonctionnalités<br>
+    ✓ Mises à jour incluses à vie<br>
+    ✓ Accès Patron + Employés<br>
+    ✓ Support prioritaire<br><br>
+    <em style="color:var(--muted)">Ou 29€/mois sans engagement</em>
+  </div>
+</div>
+
+<h3>Story Question interactive</h3>
+<div class="card">
+  <div class="card-title">Utilise le sticker "Sondage" d'Instagram</div>
+  <p style="font-size:.73rem;margin:0">
+    <strong>Fond :</strong> 04_story_tarif.png (ou fond noir uni)<br>
+    <strong>Question :</strong> "Vous gérez votre cave à vin comment ?" <br>
+    <strong>Option A :</strong> 📱 Application<br>
+    <strong>Option B :</strong> 📝 Papier/Excel<br><br>
+    → Génère de l'engagement + identifie ta cible
+  </p>
+</div>
+
+<!-- ─── PUBLICATIONS FEED ────────────────────────────────────── -->
+<h2>05 · <span>Publications (Feed)</span></h2>
+<p>Ton feed doit alterner 3 types de posts dans un rythme régulier. Voici les templates avec les textes exacts :</p>
+
+<div class="post-grid">
+
+  <div class="post-card">
+    <div class="post-card-top gold"></div>
+    <div class="post-card-body">
+      <div class="post-type">Post produit · visuel 05_post_feed</div>
+      <div class="post-title">La cave à vin, enfin maîtrisée.</div>
+      <div class="post-caption">
+        <strong>Légende :</strong><br>
+        Velox Gestion, c'est votre cave à vin dans votre poche.<br><br>
+        📊 Dashboard en temps réel<br>
+        🤖 Sommelier IA disponible 24h/24<br>
+        📷 Photo étiquette → fiche vin en 3 secondes<br><br>
+        199€ · Licence à vie · Accès immédiat<br>
+        Lien en bio 🔗<br><br>
+        #veloxgestion #gestionrestaurant #caveabeauvins
+      </div>
+    </div>
+  </div>
+
+  <div class="post-card">
+    <div class="post-card-top green"></div>
+    <div class="post-card-body">
+      <div class="post-type">Post éducatif · fond noir texte</div>
+      <div class="post-title">3 chiffres que tout patron devrait connaître</div>
+      <div class="post-caption">
+        <strong>Légende :</strong><br>
+        ① La marge de votre cave à vin<br>
+        ② Le taux de rotation de vos vins<br>
+        ③ Vos 5 vins les plus rentables<br><br>
+        Velox Gestion calcule tout ça automatiquement.<br>
+        Vous n'avez qu'à regarder.<br><br>
+        Lien en bio pour tester 7 jours gratuitement 👆
+      </div>
+    </div>
+  </div>
+
+  <div class="post-card">
+    <div class="post-card-top gold"></div>
+    <div class="post-card-body">
+      <div class="post-type">Post fonctionnalité · mockup iPhone</div>
+      <div class="post-title">Photographiez l'étiquette. L'IA fait le reste.</div>
+      <div class="post-caption">
+        <strong>Légende :</strong><br>
+        Vous recevez une livraison de 20 vins.<br>
+        Avec Velox Gestion : photographiez chaque étiquette.<br>
+        L'IA remplit automatiquement :<br>
+        → Nom, millésime, région, cépage<br>
+        → Et calcule votre marge au centime<br><br>
+        Plus de saisie manuelle. Plus d'erreurs.<br>
+        #sommelierIA #restaurateur
+      </div>
+    </div>
+  </div>
+
+  <div class="post-card">
+    <div class="post-card-top dim"></div>
+    <div class="post-card-body">
+      <div class="post-type">Post preuve sociale · citation client</div>
+      <div class="post-title">"Je savais plus ce que j'avais en cave."</div>
+      <div class="post-caption">
+        <strong>Légende :</strong><br>
+        Avant Velox Gestion, beaucoup de restaurateurs gèrent leur cave avec Excel ou sur papier.<br><br>
+        Résultat : erreurs de stock, marges inconnues, serveurs qui ne savent pas quoi proposer.<br><br>
+        Velox Gestion change ça. Depuis votre iPhone, en 5 minutes.<br><br>
+        Essai gratuit disponible · Lien en bio 🔗
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── HASHTAGS ───────────────────────────────────────────── -->
+<h2>06 · <span>Hashtags</span></h2>
+<h3>Set principal (coller en commentaire, pas dans la légende)</h3>
+<div class="hashtag-block">#veloxgestion #gestionrestaurant #restaurateur #sommelierIA #caveabeauvins #logicielrestaurant #digitalisationrestauration #gerantsrestauration #chefrestaurant #vinrestaurant #caveabeauvins #gestioncave #pwaiphone #logicielgestion #applicationrestaurant #restaurantech #foodtech #vindefrance #sommelierdefrance #sallederestaurant #entrepreneurrestauration #restaurateurfrancais #gerantdebar #cavisteconnected #digitalbistrot</div>
+
+<h3>Règle des hashtags</h3>
+<div class="rule-grid">
+  <div class="rule-do"><div class="rule-label yes">✓ FAIRE</div><div class="rule-text">Coller les hashtags en <strong>commentaire</strong> juste après avoir publié. Instagram les prend en compte mais la légende reste propre.</div></div>
+  <div class="rule-dont"><div class="rule-label no">✕ NE PAS FAIRE</div><div class="rule-text">Mettre 30 hashtags tous identiques à chaque post. Instagram pénalise le spam. Varier le set à chaque publication.</div></div>
+  <div class="rule-do"><div class="rule-label yes">✓ FAIRE</div><div class="rule-text">Alterner 5 gros hashtags (100k+), 10 moyens (10k-100k), 10 petits (&lt;10k). Les petits donnent plus de visibilité au départ.</div></div>
+  <div class="rule-dont"><div class="rule-label no">✕ NE PAS FAIRE</div><div class="rule-text">Utiliser des hashtags hors sujet (#food #restaurant sans lien direct). Ça attire de mauvais followers.</div></div>
+</div>
+
+<!-- ─── CALENDRIER ÉDITORIAL ────────────────────────────────── -->
+<h2>07 · <span>Calendrier éditorial</span></h2>
+<p>Au lancement, vise <strong>3 posts par semaine</strong> minimum. Voici le rythme recommandé :</p>
+
+<div class="calendar">
+  <div class="cal-day"><div class="cal-day-name">Lun</div><div class="cal-slot rest">—</div></div>
+  <div class="cal-day"><div class="cal-day-name">Mar</div><div class="cal-slot active">📱 Post produit ou fonctionnalité<br>18h00</div></div>
+  <div class="cal-day"><div class="cal-day-name">Mer</div><div class="cal-slot rest">—</div></div>
+  <div class="cal-day"><div class="cal-day-name">Jeu</div><div class="cal-slot active">📖 Post éducatif<br>12h00</div></div>
+  <div class="cal-day"><div class="cal-day-name">Ven</div><div class="cal-slot rest">—</div></div>
+  <div class="cal-day"><div class="cal-day-name">Sam</div><div class="cal-slot active">🎯 Story interactive + Post<br>10h00</div></div>
+  <div class="cal-day"><div class="cal-day-name">Dim</div><div class="cal-slot rest">—</div></div>
+</div>
+
+<div class="card" style="margin-top:8px">
+  <div class="card-title">Les meilleures heures pour les restaurateurs</div>
+  <p style="font-size:.73rem;margin:0">Mardi 18h · Jeudi 12h · Samedi 10h<br>
+  Les restaurateurs consultent Instagram entre les services — jamais pendant.<br>
+  Evite le vendredi soir et le samedi soir (coup de feu).</p>
+</div>
+
+<!-- ─── STRATÉGIE ─────────────────────────────────────────────── -->
+<h2>08 · <span>Stratégie de croissance</span></h2>
+<div class="post-grid">
+  <div class="card">
+    <div class="card-title">Phase 1 — Mois 1 à 2</div>
+    <p style="font-size:.72rem;margin:0">Poste 3x/semaine. Suit les comptes de restaurateurs, sommeliers, chefs. Commente avec valeur (pas "super post"). Objectif : 200 followers qualifiés.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Phase 2 — Mois 3 à 4</div>
+    <p style="font-size:.72rem;margin:0">Lance une série "Le chiffre de la semaine" — une stat de la cave d'un client anonymisé. Crée un effet de preuve sociale. Objectif : 500 followers.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Phase 3 — Mois 5+</div>
+    <p style="font-size:.72rem;margin:0">Partenariat avec 2-3 sommeliers influents (10k-50k abonnés). Offre-leur 1 accès gratuit en échange d'une story de présentation. ROI énorme.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">DM Strategy</div>
+    <p style="font-size:.72rem;margin:0">Identifie des restaurants qui parlent de leur cave sur Instagram. Envoie un DM personnalisé : "J'ai vu votre post sur [X vin] — j'ai créé un outil qui vous ferait gagner 2h par semaine. Essai gratuit ?"</p>
+  </div>
+</div>
+
+<!-- ─── RÈGLES DA ────────────────────────────────────────────── -->
+<h2>09 · <span>Règles DA visuelles</span></h2>
+<div class="rule-grid">
+  <div class="rule-do"><div class="rule-label yes">✓ Couleurs</div><div class="rule-text">Fond noir, or, crème. Ces 3 couleurs uniquement sur tous les visuels Instagram.</div></div>
+  <div class="rule-dont"><div class="rule-label no">✕ À éviter</div><div class="rule-text">Fond blanc, couleurs vives, templates Canva génériques avec fond rose/bleu.</div></div>
+  <div class="rule-do"><div class="rule-label yes">✓ Photos</div><div class="rule-text">Photos de vins en cave, tables de restaurant, gros plan étiquettes. Ambiance feutrée, lumière chaude.</div></div>
+  <div class="rule-dont"><div class="rule-label no">✕ À éviter</div><div class="rule-text">Stock photos génériques. Photos trop lumineuses ou overexposées. Selfies.</div></div>
+  <div class="rule-do"><div class="rule-label yes">✓ Typo</div><div class="rule-text">Cormorant Garamond pour les titres dans les visuels. Jost pour le corps. Disponibles sur Canva.</div></div>
+  <div class="rule-dont"><div class="rule-label no">✕ À éviter</div><div class="rule-text">Comic Sans, Helvetica, polices d'écriture cursive. Trop de tailles différentes dans le même visuel.</div></div>
+</div>
+
+<footer>
+  <span>Velox Gestion · DA Instagram v1.0 · 2026</span>
+  <span>Document interne · Confidentiel</span>
+</footer>
+
+</body>
+</html>

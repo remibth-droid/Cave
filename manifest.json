@@ -1,0 +1,67 @@
+{
+  "name": "Velox Gestion",
+  "short_name": "Velox",
+  "description": "Gestion professionnelle de cave à vin pour restaurateurs",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090705",
+  "theme_color": "#090705",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": [
+    "food",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "./favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ajouter un vin",
+      "short_name": "+ Vin",
+      "description": "Ajouter rapidement un vin",
+      "url": "./index.html#add",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

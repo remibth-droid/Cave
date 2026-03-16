@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Velox Suite — Applications professionnelles</title>
+<meta name="description" content="Velox Suite : des logiciels professionnels pour les métiers exigeants. Gestion restaurant, cave à vin, et bien plus à venir.">
+<meta property="og:title" content="Velox Suite — Choisissez votre application">
+<meta property="og:description" content="Des outils conçus pour les professionnels. Velox Gestion Restaurant disponible dès maintenant.">
+<meta name="theme-color" content="#07060a">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07060a;--surface:#0e0c14;--surface2:#16131f;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
+  --gold:#c9a84c;--gold-l:#e8c97a;
+  --creme:#f0ecfa;--muted:#6a6480;--text:#c8c0dc;
+  --accent:#7c5cbf;--accent-l:#9d7de0;--accent-d:#4a3580;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+*{-webkit-tap-highlight-color:transparent}
+button,a,[onclick]{touch-action:manipulation}
+
+/* Grain */
+body::before{content:'';position:fixed;inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.03;pointer-events:none;z-index:0}
+
+/* Gradient mesh */
+body::after{content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse at 15% 20%,rgba(124,92,191,.12) 0%,transparent 45%),
+    radial-gradient(ellipse at 85% 70%,rgba(201,168,76,.08) 0%,transparent 40%),
+    radial-gradient(ellipse at 50% 100%,rgba(124,92,191,.06) 0%,transparent 35%);
+  pointer-events:none;z-index:0}
+
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:60px 24px 100px}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:max(16px,env(safe-area-inset-top,16px)) 40px 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(7,6,10,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;color:var(--creme);letter-spacing:.06em}
+.nav-logo span{color:var(--gold);font-style:italic}
+.nav-back{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .18s;display:flex;align-items:center;gap:7px}
+.nav-back:hover{color:var(--creme)}
+.nav-back svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:120px 0 72px;animation:fadeUp .7s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero-label{font-size:.58rem;letter-spacing:.35em;text-transform:uppercase;color:var(--accent-l);margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:12px}
+.hero-label::before,.hero-label::after{content:'';width:28px;height:1px;background:var(--accent-l)}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.4rem,5vw,4.2rem);font-weight:300;line-height:1;color:var(--creme);margin-bottom:16px}
+.hero-title em{font-style:italic;color:var(--accent-l)}
+.hero-sub{font-size:.82rem;font-weight:300;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.85}
+
+/* ── APPS GRID ── */
+.apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;animation:fadeUp .7s .15s ease both}
+
+.app-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .25s;text-decoration:none;display:flex;flex-direction:column;position:relative}
+.app-card:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.app-card.available:hover{border-color:rgba(124,92,191,.4)}
+.app-card.available:hover .app-card-glow{opacity:1}
+.app-card-glow{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--accent),var(--accent-l));opacity:0;transition:opacity .25s}
+.app-card.gold-glow:hover{border-color:rgba(201,168,76,.4)}
+.app-card.gold-glow:hover .app-card-glow{background:linear-gradient(to right,var(--gold),var(--gold-l));opacity:1}
+
+.app-card-body{padding:28px 24px 20px;flex:1}
+.app-card-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:16px;border:1px solid var(--border)}
+.app-card.available .app-card-icon{background:rgba(124,92,191,.12);border-color:rgba(124,92,191,.25)}
+.app-card.gold-glow .app-card-icon{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.22)}
+.app-card.soon .app-card-icon{background:rgba(255,255,255,.04);border-color:var(--border)}
+.app-card-tag{font-size:.52rem;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+.app-card.available .app-card-tag{color:var(--accent-l)}
+.app-card.gold-glow .app-card-tag{color:var(--gold)}
+.app-card.soon .app-card-tag{color:var(--muted)}
+.app-card-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;color:var(--creme);margin-bottom:8px;line-height:1.2}
+.app-card-desc{font-size:.7rem;font-weight:300;color:var(--muted);line-height:1.75}
+
+.app-card-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.app-card-price{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--creme)}
+.app-card-price sup{font-size:.65rem;color:var(--gold);vertical-align:super}
+.app-card-price span{font-size:.62rem;color:var(--muted)}
+.app-card-cta{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;padding:6px 14px;border-radius:3px;font-family:'Jost',sans-serif;font-weight:500;transition:all .18s}
+.app-card.available .app-card-cta,.app-card.gold-glow .app-card-cta{background:var(--accent);color:#fff}
+.app-card.available:hover .app-card-cta{background:var(--accent-l)}
+.app-card.gold-glow .app-card-cta{background:var(--gold);color:#0a0806}
+.app-card.gold-glow:hover .app-card-cta{background:var(--gold-l)}
+.app-card.soon .app-card-cta{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+
+/* Bientôt badge */
+.soon-badge{position:absolute;top:14px;right:14px;font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;background:rgba(255,255,255,.06);color:var(--muted);padding:3px 9px;border-radius:20px;border:1px solid var(--border)}
+
+/* ── FOOTER ── */
+.page-footer{text-align:center;padding-top:40px;border-top:1px solid var(--border);animation:fadeUp .7s .3s ease both}
+.footer-text{font-size:.62rem;color:var(--muted);letter-spacing:.06em}
+.footer-text a{color:var(--muted);text-decoration:none}
+.footer-text a:hover{color:var(--creme)}
+
+@media(max-width:768px){
+  nav{padding:max(14px,env(safe-area-inset-top,14px)) 20px 14px}
+  .wrap{padding:40px 16px max(80px,calc(env(safe-area-inset-bottom,0px)+60px))}
+  .apps-grid{grid-template-columns:1fr 1fr}
+  .hero{padding:90px 0 40px}
+  .hero-title{font-size:clamp(1.8rem,6vw,2.4rem)}
+}
+@media(max-width:480px){
+  .apps-grid{grid-template-columns:1fr}
+  .app-card-footer{flex-direction:column;gap:10px;align-items:flex-start}
+  .hero-title{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><img src="./logo-velox.png" alt="Velox Gestion" style="height:32px;width:auto"></div>
+  <a href="index.html" class="nav-back">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Retour à l'app
+  </a>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-label">Velox Suite · Applications professionnelles</div>
+    <h1 class="hero-title">Choisissez votre<br><em>application</em></h1>
+    <p class="hero-sub">Des outils conçus pour les professionnels exigeants. Chaque application est une solution complète pour un secteur précis.</p>
+  </div>
+
+  <!-- APPS GRID -->
+  <div class="apps-grid">
+
+    <!-- ① GESTION RESTAURANT — DISPONIBLE -->
+    <a href="presentation.html" class="app-card gold-glow">
+      <div class="app-card-glow"></div>
+      <div class="app-card-body">
+        <div class="app-card-icon">🍷</div>
+        <div class="app-card-tag">Disponible · Restauration</div>
+        <div class="app-card-name">Velox Gestion<br>Restaurant</div>
+        <div class="app-card-desc">Cave à vin, stocks, ventes, dashboard analytics, sommelier IA, carte des vignobles, exports PDF et bons de commande.</div>
+      </div>
+      <div class="app-card-footer">
+        <div class="app-card-price"><sup>€</sup>199 <span>· licence à vie</span></div>
+        <div class="app-card-cta">Découvrir →</div>
+      </div>
+    </a>
+
+    <!-- ② ?? BIENTÔT -->
+    <div class="app-card soon">
+      <div class="soon-badge">Bientôt</div>
+      <div class="app-card-body">
+        <div class="app-card-icon">??</div>
+        <div class="app-card-tag">En développement</div>
+        <div class="app-card-name">Velox ??<br>Application 2</div>
+        <div class="app-card-desc">Une nouvelle application professionnelle est en cours de développement. Revenez bientôt pour la découvrir.</div>
+      </div>
+      <div class="app-card-footer">
+        <div class="app-card-price" style="color:var(--muted)">— €</div>
+        <div class="app-card-cta">Bientôt disponible</div>
+      </div>
+    </div>
+
+    <!-- ③ ?? BIENTÔT -->
+    <div class="app-card soon">
+      <div class="soon-badge">Bientôt</div>
+      <div class="app-card-body">
+        <div class="app-card-icon">??</div>
+        <div class="app-card-tag">En développement</div>
+        <div class="app-card-name">Velox ??<br>Application 3</div>
+        <div class="app-card-desc">Une nouvelle application professionnelle est en cours de développement. Revenez bientôt pour la découvrir.</div>
+      </div>
+      <div class="app-card-footer">
+        <div class="app-card-price" style="color:var(--muted)">— €</div>
+        <div class="app-card-cta">Bientôt disponible</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    <p class="footer-text" style="margin-bottom:10px">Velox Suite · Logiciels professionnels</p>
+    <p class="footer-text"><a href="mailto:veloxassistancep@gmail.com">Contact & Support</a> · <a href="index.html">Accéder à mon app</a></p>
+  </div>
+
+</div>
+</body>
+</html>
