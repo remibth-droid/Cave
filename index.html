@@ -3475,8 +3475,9 @@ function startApp() {
           max_tokens:1000,
           system: buildCaveContext(),
           messages: sommelierHistory.slice(-10)
-        })
-      });
+        }
+      })
+    });
       const data = await res.json();
       const reply = data.content?.[0]?.text || 'Désolé, je n\'ai pas pu répondre.';
       hideTyping();
